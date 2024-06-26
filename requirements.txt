@@ -1,5 +1,6 @@
 streamlit
 opencv-python-headless
 numpy
+wget
 requests
 streamlit-webrtc
