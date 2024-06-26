@@ -173,23 +173,23 @@ def main():
                     st.experimental_rerun()
 
     elif option == 'Webcam':
-    camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
-    camera_index = 0 if camera_option == 'Back Camera' else 1
+        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
+        camera_index = 0 if camera_option == 'Back Camera' else 1
 
-    webrtc_ctx = webrtc_streamer(
-        key="example",
-        video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
-        media_stream_constraints={
-            "video": {
-                "facingMode": "user" if camera_index == 1 else "environment"
+        webrtc_ctx = webrtc_streamer(
+            key="example",
+            video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
+            media_stream_constraints={
+                "video": {
+                    "facingMode": "user" if camera_index == 1 else "environment"
+                },
+                "audio": False,
             },
-            "audio": False,
-        },
-        async_transform=True,
-    )
-
-    if st.button("Back to Start"):
-        st.experimental_rerun()
+            async_transform=True,
+        )
+        # Opsi kembali ke tampilan awal
+        if st.button("Back to Start"):
+            st.experimental_rerun()
 
 
 if __name__ == "__main__":
