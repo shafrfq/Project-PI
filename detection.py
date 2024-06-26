@@ -3,13 +3,18 @@ import cv2
 import numpy as np
 import os
 import tempfile
+import requests
 
 # Fungsi untuk mengunduh file jika belum ada atau unduhan sebelumnya tidak lengkap
 def download_file(url, output_path, expected_size=None):
     if not os.path.exists(output_path) or (expected_size and os.path.getsize(output_path) < expected_size):
         st.write(f"Downloading {url} to {output_path}...")
         try:
-            wget.download(url, output_path)
+            response = requests.get(url, stream=True)
+            with open(output_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
         except Exception as e:
             st.error(f"Error downloading {url}: {e}")
 
@@ -17,10 +22,10 @@ def download_file(url, output_path, expected_size=None):
 @st.cache_resource
 def load_yolo():
     os.makedirs('yolov3', exist_ok=True)
-    wget.download('https://pjreddie.com/media/files/yolov3.weights', 'yolov3/yolov3.weights')
-    wget.download('https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg', 'yolov3/yolov3.cfg')
-    wget.download('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names', 'yolov3/coco.names')
-    
+    download_file('https://pjreddie.com/media/files/yolov3.weights', 'yolov3/yolov3.weights', 248007048)
+    download_file('https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg', 'yolov3/yolov3.cfg')
+    download_file('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names', 'yolov3/coco.names')
+
     net = cv2.dnn.readNet('yolov3/yolov3.weights', 'yolov3/yolov3.cfg')
     with open('yolov3/coco.names', 'r') as f:
         classes = [line.strip() for line in f.readlines()]
@@ -28,7 +33,7 @@ def load_yolo():
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
-    return net, classes, output_layers    
+    return net, classes, output_layers
 
 # Fungsi untuk deteksi objek
 def detect_objects(net, classes, output_layers, image):
