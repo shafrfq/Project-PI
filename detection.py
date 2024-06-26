@@ -173,26 +173,41 @@ def main():
                     st.experimental_rerun()
 
     elif option == 'Webcam':
-        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
-        if camera_option == 'Front Camera':
-            selected_device = {'label': 'Front Camera', 'id': 'user'}
-        else:
-            selected_device = {'label': 'Back Camera', 'id': 'environment'}
-
-        webrtc_streamer(
+        webrtc_ctx = webrtc_streamer(
             key="example",
             video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
             rtc_configuration=RTCConfiguration(
                 {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
             ),
             media_stream_constraints={
-                "video": {
-                    "facingMode": selected_device['id']
-                },
+                "video": True,
                 "audio": False
             },
             async_transform=True
         )
+
+        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
+        if camera_option == 'Front Camera':
+            selected_device = {'label': 'Front Camera', 'id': 'front'}
+        else:
+            selected_device = {'label': 'Back Camera', 'id': 'back'}
+
+            webrtc_streamer(
+                key="example",
+                video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
+                rtc_configuration=RTCConfiguration(
+                    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+                ),
+                media_stream_constraints={
+                    "video": {
+                        "deviceId": {
+                            "exact": selected_device['id']
+                        }
+                    },
+                    "audio": False
+                },
+                async_transform=True
+            )
 
         if st.button("Back to Start"):
             st.experimental_rerun()
