@@ -17,9 +17,9 @@ def download_file(url, output_path, expected_size=None):
 @st.cache_resource
 def load_yolo():
     os.makedirs('yolov3', exist_ok=True)
-    download_file('https://pjreddie.com/media/files/yolov3.weights', 'yolov3/yolov3.weights', 248007048)
-    download_file('https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg', 'yolov3/yolov3.cfg')
-    download_file('https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names', 'yolov3/coco.names')
+    download_file('https://github.com/ayooshkathuria/YOLO_v3_tutorial_from_scratch/raw/master/yolov3.weights', 'yolov3/yolov3.weights', 248007048)
+    download_file('https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg?raw=true', 'yolov3/yolov3.cfg')
+    download_file('https://github.com/pjreddie/darknet/blob/master/data/coco.names?raw=true', 'yolov3/coco.names')
 
     net = cv2.dnn.readNet('yolov3/yolov3.weights', 'yolov3/yolov3.cfg')
     with open('yolov3/coco.names', 'r') as f:
@@ -28,7 +28,7 @@ def load_yolo():
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
-    return net, classes, output_layers
+    return net, classes, output_layers    
 
 # Fungsi untuk deteksi objek
 def detect_objects(net, classes, output_layers, image):
