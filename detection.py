@@ -4,11 +4,16 @@ import numpy as np
 import os
 import tempfile
 import requests
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Fungsi untuk mengunduh file jika belum ada atau unduhan sebelumnya tidak lengkap
 def download_file(url, output_path, expected_size=None):
     if not os.path.exists(output_path) or (expected_size and os.path.getsize(output_path) < expected_size):
-        st.write(f"Downloading {url} to {output_path}...")
+        logger.info(f"Downloading {url} to {output_path}...")
         try:
             response = requests.get(url, stream=True)
             with open(output_path, 'wb') as f:
