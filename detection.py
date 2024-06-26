@@ -5,7 +5,7 @@ import os
 import tempfile
 import requests
 import logging
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -82,6 +82,25 @@ def detect_objects(net, classes, output_layers, image):
 
     return image
 
+# Fungsi untuk deteksi objek di video
+def detect_video(net, classes, output_layers, video_path):
+    cap = cv2.VideoCapture(video_path)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    output_video_path = 'output.mp4'
+    out = cv2.VideoWriter(output_video_path, fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
+
+    while(cap.isOpened()):
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        detected_frame = detect_objects(net, classes, output_layers, frame)
+        out.write(detected_frame)
+
+    cap.release()
+    out.release()
+    return output_video_path
+
 # VideoTransformerBase subclass for real-time object detection
 class YOLOv3VideoTransformer(VideoTransformerBase):
     def __init__(self, net, classes, output_layers):
@@ -116,6 +135,7 @@ def main():
                 detected_image = detect_objects(net, classes, output_layers, image)
                 st.image(detected_image, channels="BGR", caption='Detected Image.', use_column_width=True)
 
+                # Opsi unduh gambar hasil deteksi
                 is_success, buffer = cv2.imencode(".jpg", detected_image)
                 if is_success:
                     st.download_button(
@@ -125,6 +145,7 @@ def main():
                         mime="image/jpeg"
                     )
 
+                # Opsi kembali ke tampilan awal
                 if st.button("Back to Start"):
                     st.experimental_rerun()
 
@@ -147,58 +168,37 @@ def main():
                         mime="video/mp4"
                     )
 
+                # Opsi kembali ke tampilan awal
                 if st.button("Back to Start"):
                     st.experimental_rerun()
 
     elif option == 'Webcam':
-        st.write("Loading available cameras...")
-        # JavaScript code to get the list of video devices
-        get_video_devices_js = """
-        <script>
-        async function getVideoDevices() {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            return videoDevices;
-        }
-        </script>
-        """
-        st.components.v1.html(get_video_devices_js, height=0)
+        webrtc_ctx = webrtc_streamer(
+            key="example",
+            video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
+            rtc_configuration=RTCConfiguration(
+                {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+            ),
+            media_stream_constraints={
+                "video": True,
+                "audio": False
+            },
+            async_transform=True
+        )
 
-        # JavaScript code to send the list of video devices to Streamlit
-        st.components.v1.html("""
-        <script>
-        async function sendVideoDevices() {
-            const videoDevices = await getVideoDevices();
-            const videoDevicesList = videoDevices.map(device => ({ label: device.label, id: device.deviceId }));
-            const jsonVideoDevicesList = JSON.stringify(videoDevicesList);
-            const streamlitVideoDevicesElement = document.createElement('streamlit-video-devices');
-            streamlitVideoDevicesElement.textContent = jsonVideoDevicesList;
-            document.body.appendChild(streamlitVideoDevicesElement);
-        }
-        sendVideoDevices();
-        </script>
-        """, height=0)
-
-        # Hidden Streamlit element to receive the list of video devices
-        video_devices = st.text_area("Available Video Devices", "", height=1)
-        video_devices_list = st.experimental_get_query_params().get('video_devices', [])
-
-        # Parse the video devices list
-        import json
-        if video_devices_list:
-            video_devices = json.loads(video_devices_list[0])
-            video_device_labels = [device['label'] for device in video_devices]
+        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
+        if camera_option == 'Front Camera':
+            selected_device = {'label': 'Front Camera', 'id': 'front'}
         else:
-            video_device_labels = []
+            selected_device = {'label': 'Back Camera', 'id': 'back'}
 
-        camera_option = st.selectbox('Select Camera:', video_device_labels)
-
-        if camera_option:
-            selected_device = next(device for device in video_devices if device['label'] == camera_option)
-
-            webrtc_ctx = webrtc_streamer(
+        if st.button("Start Detection"):
+            webrtc_streamer(
                 key="example",
                 video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
+                rtc_configuration=RTCConfiguration(
+                    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+                ),
                 media_stream_constraints={
                     "video": {
                         "deviceId": {
@@ -210,8 +210,8 @@ def main():
                 async_transform=True
             )
 
-            if st.button("Back to Start"):
-                st.experimental_rerun()
+        if st.button("Back to Start"):
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
