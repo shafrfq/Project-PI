@@ -5,7 +5,7 @@ import os
 import tempfile
 import requests
 import logging
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -173,44 +173,24 @@ def main():
                     st.experimental_rerun()
 
     elif option == 'Webcam':
+        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
+        camera_index = 0 if camera_option == 'Back Camera' else 1
+
         webrtc_ctx = webrtc_streamer(
             key="example",
             video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
-            rtc_configuration=RTCConfiguration(
-                {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-            ),
             media_stream_constraints={
-                "video": True,
-                "audio": False
-            },
-            async_transform=True
-        )
-
-        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
-        if camera_option == 'Front Camera':
-            selected_device = {'label': 'Front Camera', 'id': 'front'}
-        else:
-            selected_device = {'label': 'Back Camera', 'id': 'back'}
-
-            webrtc_streamer(
-                key="example",
-                video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
-                rtc_configuration=RTCConfiguration(
-                    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-                ),
-                media_stream_constraints={
-                    "video": {
-                        "deviceId": {
-                            "exact": selected_device['id']
-                        }
-                    },
-                    "audio": False
+                "video": {
+                    "facingMode": "user" if camera_index == 1 else "environment"
                 },
-                async_transform=True
-            )
-
+                "audio": False,
+            },
+            async_transform=True,
+        )
+        # Opsi kembali ke tampilan awal
         if st.button("Back to Start"):
             st.experimental_rerun()
+
 
 if __name__ == "__main__":
     main()
