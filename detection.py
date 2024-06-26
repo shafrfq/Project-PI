@@ -7,22 +7,6 @@ import requests
 import logging
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Fungsi untuk mengunduh file jika belum ada atau unduhan sebelumnya tidak lengkap
-def download_file(url, output_path, expected_size=None):
-    if not os.path.exists(output_path) or (expected_size and os.path.getsize(output_path) < expected_size):
-        logger.info(f"Downloading {url} to {output_path}...")
-        try:
-            response = requests.get(url, stream=True)
-            with open(output_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-        except Exception as e:
-            st.error(f"Error downloading {url}: {e}")
 
 # Mengunduh model YOLOv3
 @st.cache_resource
