@@ -1,6 +1,5 @@
 streamlit
-opencv-python-headless
-cv2
+opencv-contrib-python-headless
 numpy
 wget
 os-sys
