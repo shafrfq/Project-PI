@@ -5,6 +5,7 @@ import os
 import tempfile
 import requests
 import logging
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +101,18 @@ def detect_video(net, classes, output_layers, video_path):
     out.release()
     return output_video_path
 
+# VideoTransformerBase subclass for real-time object detection
+class YOLOv3VideoTransformer(VideoTransformerBase):
+    def __init__(self, net, classes, output_layers):
+        self.net = net
+        self.classes = classes
+        self.output_layers = output_layers
+
+    def transform(self, frame):
+        image = frame.to_ndarray(format="bgr24")
+        detected_image = detect_objects(self.net, self.classes, self.output_layers, image)
+        return detected_image
+
 # Fungsi utama untuk aplikasi Streamlit
 def main():
     st.title("Object Detection using YOLOv3")
@@ -139,7 +152,7 @@ def main():
     elif option == 'Video':
         uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "avi", "mov"])
         if uploaded_file is not None:
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
+            tfile = tempfile.NamedTemporaryFile(delete=False)
             tfile.write(uploaded_file.read())
             video_path = tfile.name
 
@@ -160,29 +173,13 @@ def main():
                     st.experimental_rerun()
 
     elif option == 'Webcam':
-        camera_option = st.selectbox('Select Camera:', ('Front Camera', 'Back Camera'))
-        camera_index = 0 if camera_option == 'Front Camera' else 1
+        webrtc_ctx = webrtc_streamer(
+            key="example",
+            video_transformer_factory=lambda: YOLOv3VideoTransformer(net, classes, output_layers),
+            media_stream_constraints={"video": True, "audio": False},
+            async_transform=True
+        )
 
-        run = st.checkbox('Run Webcam')
-        FRAME_WINDOW = st.image([])
-
-        cap = cv2.VideoCapture(camera_index)
-        if not cap.isOpened():
-            st.error(f"Camera with index {camera_index} is not available.")
-            return
-
-        while run:
-            ret, frame = cap.read()
-            if not ret:
-                st.error("Failed to read frame from camera.")
-                break
-
-            frame = detect_objects(net, classes, output_layers, frame)
-            FRAME_WINDOW.image(frame, channels="BGR")
-
-        cap.release()
-
-        # Opsi kembali ke tampilan awal
         if st.button("Back to Start"):
             st.experimental_rerun()
 
