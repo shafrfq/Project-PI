@@ -187,7 +187,7 @@ def main():
             ),
             media_stream_constraints={
                 "video": {
-                    "facingMode": selected_device['id']
+                    "facingMode": {"exact": selected_device['id']}
                 },
                 "audio": False
             },
