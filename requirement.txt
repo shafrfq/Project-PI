@@ -1,6 +1,0 @@
-streamlit
-opencv-contrib-python-headless
-numpy
-wget
-os-sys
-temp
