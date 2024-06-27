@@ -45,7 +45,7 @@ def load_yolo():
 allowed_labels = {"person", "car", "motorbike", "bus", "truck", "train", "bicycle", "traffic light", "parking meter", "stop sign", "aeroplane"} 
 
 # Fungsi untuk deteksi objek
-def detect_objects(net, classes, output_layers, image):
+def detect_objects(net, classes, output_layers, image, allowed_labels):
     height, width, channels = image.shape
     blob = cv2.dnn.blobFromImage(image, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
     net.setInput(blob)
@@ -59,7 +59,7 @@ def detect_objects(net, classes, output_layers, image):
             scores = detection[5:]
             class_id = np.argmax(scores)
             confidence = scores[class_id]
-            if confidence > 0.5:
+            if confidence > 0.5 and classes[class_id] in allowed_labels:
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
@@ -86,7 +86,7 @@ def detect_objects(net, classes, output_layers, image):
     return image
 
 # Fungsi untuk deteksi objek di video
-def detect_video(net, classes, output_layers, video_path):
+def detect_video(net, classes, output_layers, video_path, allowed_labels):
     cap = cv2.VideoCapture(video_path)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_video_path = 'output.mp4'
@@ -97,7 +97,7 @@ def detect_video(net, classes, output_layers, video_path):
         if not ret:
             break
 
-        detected_frame = detect_objects(net, classes, output_layers, frame)
+        detected_frame = detect_objects(net, classes, output_layers, frame, allowed_labels)
         out.write(detected_frame)
 
     cap.release()
@@ -113,7 +113,7 @@ class YOLOv3VideoTransformer(VideoTransformerBase):
 
     def transform(self, frame):
         image = frame.to_ndarray(format="bgr24")
-        detected_image = detect_objects(self.net, self.classes, self.output_layers, image)
+        detected_image = detect_objects(self.net, self.classes, self.output_layers, image, allowed_labels)
         return detected_image
 
 # Fungsi utama untuk aplikasi Streamlit
@@ -135,7 +135,7 @@ def main():
 
             if st.button("Detect Objects"):
                 st.write("Detecting...")
-                detected_image = detect_objects(net, classes, output_layers, image)
+                detected_image = detect_objects(net, classes, output_layers, image, allowed_labels)
                 st.image(detected_image, channels="BGR", caption='Detected Image.', use_column_width=True)
 
                 # Opsi unduh gambar hasil deteksi
@@ -161,7 +161,7 @@ def main():
 
             if st.button("Detect Objects in Video"):
                 st.write("Detecting...")
-                output_video_path = detect_video(net, classes, output_layers, video_path)
+                output_video_path = detect_video(net, classes, output_layers, video_path, allowed_labels)
                 st.video(output_video_path)
                 with open(output_video_path, "rb") as file:
                     st.download_button(
