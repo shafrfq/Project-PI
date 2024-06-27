@@ -41,6 +41,9 @@ def load_yolo():
 
     return net, classes, output_layers
 
+# Definisikan subset label yang diizinkan
+allowed_labels = {"person", "car", "motorbike", "bus", "truck", "train", "bicycle", "traffic light", "parking meter", "stop sign", "aeroplane"} 
+
 # Fungsi untuk deteksi objek
 def detect_objects(net, classes, output_layers, image):
     height, width, channels = image.shape
